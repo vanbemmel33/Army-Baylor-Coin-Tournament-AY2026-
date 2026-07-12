@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Army Baylor Coin Tournament Dashboard</title>
+    <style>
+        :root {
+            --baylor-green: #154734;
+            --baylor-gold: #FFB81C;
+            --dark-bg: #121212;
+            --card-bg: #1e1e1e;
+            --text-light: #f5f5f5;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--dark-bg); color: var(--text-light); margin: 0; padding: 20px; }
+        header { text-align: center; border-bottom: 3px solid var(--baylor-gold); padding-bottom: 10px; margin-bottom: 30px; background-color: var(--baylor-green); padding: 20px; border-radius: 8px; }
+        h1 { color: var(--baylor-gold); margin: 0; font-size: 2.5rem; }
+        h2 { margin: 5px 0 0 0; font-weight: 300; }
+        .voter-login { background-color: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--baylor-gold); margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
+        .voter-login input { padding: 8px; font-size: 1rem; border-radius: 4px; border: 1px solid #555; background: #333; color: white; width: 250px; }
+        .grid-container { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; }
+        .panel { background-color: var(--card-bg); border-radius: 8px; padding: 20px; border: 1px solid #333; }
+        .panel-title { color: var(--baylor-gold); font-size: 1.5rem; margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 8px; }
+        .match-card { background: #252525; border-left: 5px solid var(--baylor-green); border-radius: 4px; padding: 15px; margin-bottom: 20px; }
+        .match-title { font-size: 1rem; color: #aaa; margin-bottom: 12px; font-weight: bold; display: flex; justify-content: space-between; }
+        .team-row { display: flex; justify-content: space-between; align-items: center; margin: 15px 0; background: #1a1a1a; padding: 12px; border-radius: 6px; }
+        .team-info { display: flex; align-items: center; gap: 20px; max-width: 65%; }
+        .team-text { display: flex; flex-direction: column; }
+        .team-name { font-weight: 500; font-size: 1.2rem; }
+        .team-desc { font-size: 0.85rem; color: #999; margin-top: 4px; line-height: 1.3; }
+        .coin-img { width: 120px; height: 120px; border-radius: 8px; object-fit: contain; border: 2px solid var(--baylor-gold); background-color: #000; transition: transform 0.25s ease-in-out, box-shadow 0.25s ease-in-out; cursor: zoom-in; position: relative; z-index: 1; transform-origin: center left; flex-shrink: 0; }
+        .coin-img:hover { transform: scale(7); z-index: 9999; box-shadow: 10px 15px 40px rgba(0,0,0,0.95); border-radius: 4px; }
+        .controls { display: flex; align-items: center; gap: 15px; }
+        .score { font-size: 1.5rem; font-weight: bold; color: var(--baylor-gold); min-width: 40px; text-align: center; }
+        button { background-color: var(--baylor-green); color: white; border: 1px solid var(--baylor-gold); padding: 10px 25px; font-size: 1rem; cursor: pointer; border-radius: 4px; font-weight: bold; transition: background 0.2s; }
+        button:hover { background-color: #1b5c43; }
+        button:disabled { background-color: #555; color: #888; border-color: #444; cursor: not-allowed; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; font-size: 1.1rem; }
+        th { color: var(--baylor-gold); font-size: 1.2rem; }
+        .champion-box { background: linear-gradient(145deg, var(--baylor-green), #0d2d21); border: 2px solid var(--baylor-gold); text-align: center; padding: 25px; border-radius: 8px; margin-bottom: 25px; }
+        .champion-name { font-size: 2.5rem; font-weight: bold; color: var(--baylor-gold); margin-top: 15px; }
+        #submit-btn { margin-top: 20px; width: 100%; padding: 12px; font-size: 1.1rem; background-color: #333; color: var(--baylor-gold); }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>ARMY BAYLOR MHA/MBA</h1>
+    <h2>Class of 2026–2028 Coin Tournament</h2>
+</header>
+
+<div class="voter-login">
+    <label for="voterName"><strong>Current Voter Name:</strong></label>
+    <input type="text" id="voterName" placeholder="Enter name to unlock voting...">
+</div>
+
+<div class="grid-container">
+    <div class="panel">
+        <div class="panel-title">Tournament Bracket</div>
+        <div id="bracket-container"></div>
+    </div>
+
+    <div>
+        <div class="champion-box">
+            <div>🏆 TOURNAMENT CHAMPION 🏆</div>
+            <div id="champion-display" class="champion-name">TBD</div>
+            <button id="submit-btn" style="display: none;" onclick="submitResults()">📤 Submit Final Results to Sheets</button>
+        </div>
+        <div class="panel">
+            <div class="panel-title">Weighted Leaderboard</div>
+            <table>
+                <thead><tr><th>Coin</th><th>Total Votes</th><th>Points (Weighted)</th></tr></thead>
+                <tbody id="leaderboard-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxCeGENXddCV-cNHwudo5BLM0g4osyHD_dQGCIncav7aX3_4ZyMjuOP2U-HgX36ViH4Wg/exec"; 
+
+    const images = {
+        "CyBEAR: Tri-Service": "CyBEAR_Tech_Tri-service_Design.png",
+        "CyBEAR: San Antonio": "Cybear_San Antonio City_Design.png",
+        "Constellation Medic Bear": "Ursa Minor_Coin Design.jpeg",
+        "Beret Bear": "Tri-service_Bear_Beret.png",
+        "CyBEAR - Sic Em!": "Cybear_Sic Em_BU _Design.jpeg",
+        "BU + Flag Heritage": "Baylor Logo_USA_Coin Design.jpeg",
+        "BU + MedCOE": "Baylor_Round_Simple_Coin Design.jpeg",
+        "Soda-Can Anniversary": "Dr Pepper_Coin Design.jpeg",
+        "Values Scroll": "Baylor_Round_Full_Coin Design.jpeg",
+        "BU Green + Gold": "Baylor Logo_v2_Coin Design.jpeg",
+        "TBD": ""
+    };
+
+    const descriptions = {
+        "CyBEAR - Sic Em!": "I created a rendition of the AI theme (with permission). I agreed with him that being the first AI concentration cohort is a significant milestone in Army Baylor history.",
+        "CyBEAR: Tri-Service": "As the very FIRST class with an AI concentration, I propose the graduating class of 2028 commemorate this success with CYBEAR!",
+        "Constellation Medic Bear": "A star-mapped bear constellation adorned with a medic's helmet.",
+        "Beret Bear": "A fierce, roaring grizzly bear wearing a military green beret.",
+        "CyBEAR: San Antonio": "A mechanized bear design explicitly honoring the Army, Navy, and Air Force branches, featuring San Antonio skyline.",
+        "BU + Flag Heritage": "A patriotic presentation blending the traditional Baylor 'BU' with the American flag.",
+        "BU + MedCOE": "A clean design emphasizing the Army Baylor MHA/MBA program with classic framing.",
+        "Soda-Can Anniversary": "A creative design mimicking a soda can complete with 'nutrition facts'.",
+        "Values Scroll": "An ornate emblem featuring a cross to signify the program's foundational leadership values.",
+        "BU Green + Gold": "A classic, polished bronze-style coin celebrating the 75th anniversary of the program.",
+        "TBD": "Awaiting advancement..."
+    };
+
+    const state = {
+        coins: {
+            "CyBEAR: Tri-Service": { category: "Tech", votes: 0, pts: 0 },
+            "CyBEAR: San Antonio": { category: "Heritage", votes: 0, pts: 0 },
+            "Constellation Medic Bear": { category: "Astral", votes: 0, pts: 0 },
+            "Beret Bear": { category: "Mascot", votes: 0, pts: 0 },
+            "CyBEAR - Sic Em!": { category: "Tech", votes: 0, pts: 0 },
+            "BU + Flag Heritage": { category: "Patriotic", votes: 0, pts: 0 },
+            "BU + MedCOE": { category: "Multi-Service", votes: 0, pts: 0 },
+            "Soda-Can Anniversary": { category: "Creative", votes: 0, pts: 0 },
+            "Values Scroll": { category: "Leadership", votes: 0, pts: 0 },
+            "BU Green + Gold": { category: "Academic", votes: 0, pts: 0 }
+        },
+        matches: {
+            p1: { id: "p1", name: "Play-In 1", weight: 1, t1: "BU Green + Gold", t2: "BU + Flag Heritage", s1: 0, s2: 0, next: ["q1", "t2"] },
+            p2: { id: "p2", name: "Play-In 2", weight: 1, t1: "BU + MedCOE", t2: "Values Scroll", s1: 0, s2: 0, next: ["q3", "t2"] },
+            q1: { id: "q1", name: "Quarterfinal 1", weight: 2, t1: "CyBEAR - Sic Em!", t2: "TBD", s1: 0, s2: 0, next: ["s1", "t1"] },
+            q2: { id: "q2", name: "Quarterfinal 2", weight: 2, t1: "Constellation Medic Bear", t2: "CyBEAR: Tri-Service", s1: 0, s2: 0, next: ["s1", "t2"] },
+            q3: { id: "q3", name: "Quarterfinal 3", weight: 2, t1: "CyBEAR: San Antonio", t2: "TBD", s1: 0, s2: 0, next: ["s2", "t1"] },
+            q4: { id: "q4", name: "Quarterfinal 4", weight: 2, t1: "Soda-Can Anniversary", t2: "Beret Bear", s1: 0, s2: 0, next: ["s2", "t2"] },
+            s1: { id: "s1", name: "Semifinal 1", weight: 3, t1: "TBD", t2: "TBD", s1: 0, s2: 0, next: ["f1", "t1"] },
+            s2: { id: "s2", name: "Semifinal 2", weight: 3, t1: "TBD", t2: "TBD", s1: 0, s2: 0, next: ["f1", "t2"] },
+            f1: { id: "f1", name: "Championship", weight: 5, t1: "TBD", t2: "TBD", s1: 0, s2: 0, next: ["champ", "val"] }
+        },
+        voteLog: [] 
+    };
+
+    // ... (rest of logic unchanged from version 9)
+    function updateVote(matchId, teamSlot) { const voterName = document.getElementById("voterName").value.trim().toLowerCase(); if (!voterName) { alert("⚠️ Please enter a Voter Name."); return; } const alreadyVoted = state.voteLog.some(log => log.name === voterName && log.matchId === matchId); if (alreadyVoted) { alert("⚠️ Already voted in this match."); return; } const match = state.matches[matchId]; let votedCoin = (teamSlot === 1) ? match.t1 : match.t2; if (teamSlot === 1) match.s1 += 1; else match.s2 += 1; state.voteLog.push({ name: voterName, matchId: matchId, matchName: match.name, votedCoin: votedCoin, timestamp: new Date().toISOString() }); evaluateBracket(); render(); }
+    function evaluateBracket() { Object.keys(state.coins).forEach(k => { state.coins[k].votes = 0; state.coins[k].pts = 0; }); ["p1", "p2", "q1", "q2", "q3", "q4", "s1", "s2", "f1"].forEach(id => { const m = state.matches[id]; if(state.coins[m.t1]) { state.coins[m.t1].votes += m.s1; state.coins[m.t1].pts += (m.s1 * m.weight); } if(state.coins[m.t2]) { state.coins[m.t2].votes += m.s2; state.coins[m.t2].pts += (m.s2 * m.weight); } if (m.s1 > 0 || m.s2 > 0) { let winner = (m.s1 > m.s2) ? m.t1 : (m.s2 > m.s1) ? m.t2 : "TBD"; if (m.next[0] === "champ") { document.getElementById("champion-display").innerText = winner; document.getElementById("submit-btn").style.display = winner !== "TBD" ? "inline-block" : "none"; } else { const nextMatch = state.matches[m.next[0]]; if (m.next[1] === "t1") nextMatch.t1 = winner; if (m.next[1] === "t2") nextMatch.t2 = winner; } } }); }
+  function submitResults() {
+    const btn = document.getElementById("submit-btn");
+    const voterName = document.getElementById("voterName").value;
+    
+    if (!voterName) { alert("⚠️ Enter your name first!"); return; }
+    btn.innerText = "Submitting...";
+    btn.disabled = true;
+
+    // Create the exact object the script expects
+    const payload = {
+        voterName: voterName,
+        leaderboard: Object.entries(state.coins).map(([name, data]) => ({
+            name: name,
+            votes: data.votes,
+            pts: data.pts
+        }))
+    };
+
+    fetch(WEB_APP_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    }).then(() => {
+        btn.innerText = "✅ Success!";
+        btn.style.backgroundColor = "var(--baylor-gold)";
+    }).catch(err => {
+        console.error(err);
+        btn.innerText = "⚠️ Error - Check Console";
+        btn.disabled = false;
+    });
+}
+
+    function render() { const container = document.getElementById("bracket-container"); container.innerHTML = ""; Object.values(state.matches).forEach(m => { const isPlayable = m.t1 !== "TBD" && m.t2 !== "TBD"; const card = document.createElement("div"); card.className = "match-card"; card.style.opacity = isPlayable ? "1" : "0.5"; const img1 = m.t1 !== "TBD" ? `<img src="${images[m.t1]}" class="coin-img" onerror="this.style.display='none'">` : ''; const img2 = m.t2 !== "TBD" ? `<img src="${images[m.t2]}" class="coin-img" onerror="this.style.display='none'">` : ''; card.innerHTML = `<div class="match-title"><span>${m.name}</span><span>Multiplier: ${m.weight}x</span></div><div class="team-row"><div class="team-info">${img1}<div class="team-text"><span class="team-name">${m.t1}</span><span class="team-desc">${descriptions[m.t1]}</span></div></div><div class="controls"><span class="score">${m.s1}</span><button onclick="updateVote('${m.id}', 1)" ${!isPlayable ? "disabled" : ""}>Vote</button></div></div><div class="team-row"><div class="team-info">${img2}<div class="team-text"><span class="team-name">${m.t2}</span><span class="team-desc">${descriptions[m.t2]}</span></div></div><div class="controls"><span class="score">${m.s2}</span><button onclick="updateVote('${m.id}', 2)" ${!isPlayable ? "disabled" : ""}>Vote</button></div></div>`; container.appendChild(card); }); const sorted = Object.entries(state.coins).sort((a, b) => b[1].pts - a[1].pts); const tbody = document.getElementById("leaderboard-body"); tbody.innerHTML = ""; sorted.forEach(([name, data]) => { tbody.innerHTML += `<tr><td><strong>${name}</strong></td><td>${data.votes}</td><td>${data.pts}</td></tr>`; }); }
+    evaluateBracket(); render();
+</script>
+</body>
+</html>
